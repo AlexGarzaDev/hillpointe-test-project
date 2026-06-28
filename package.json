@@ -1,0 +1,35 @@
+{
+  "name": "Hillpointe",
+  "version": "1.0.0",
+  "description": "Hillpointe Project",
+  "main": "apps/api/dist/server.js",
+  "scripts": {
+    "dev": "npm --prefix apps/api exec concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "npm --prefix apps/api run dev",
+    "frontend:dev": "npm --prefix apps/web run dev",
+    "build": "npm run backend:build && npm run frontend:build",
+    "backend:build": "npm --prefix apps/api run build",
+    "frontend:build": "npm --prefix apps/web run build",
+    "prod": "npm run build && npm run start",
+    "start": "npm --prefix apps/api run start",
+    "frontend:preview": "npm --prefix apps/web run preview",
+    "typecheck": "npm --prefix apps/api run typecheck",
+    "test": "npm --prefix apps/api run test",
+    "test:watch": "npm --prefix apps/api run test:watch",
+    "test:coverage": "npm --prefix apps/api run test:coverage",
+    "lint": "npm --prefix apps/api run lint",
+    "lint:fix": "npm --prefix apps/api run lint:fix",
+    "format": "npm --prefix apps/api exec prettier . --write"
+  },
+  "keywords": [
+    "node",
+    "typescript",
+    "express",
+    "Hillpointe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}
