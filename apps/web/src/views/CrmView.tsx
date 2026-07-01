@@ -34,6 +34,9 @@ export function CrmView() {
   const [showScheduleTour, setShowScheduleTour] = useState(false)
   const [tourUnitId, setTourUnitId] = useState('')
   const [tourTime, setTourTime] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState<ProspectStatus | ''>('')
+  const [filterUnitId, setFilterUnitId] = useState('')
 
   const handleTransition = useCallback(
     async (prospectId: string, toStatus: ProspectStatus) => {
@@ -90,6 +93,17 @@ export function CrmView() {
 
   const selectedTasks = selected ? tasks.filter((t) => t.prospectId === selected.id) : []
   const selectedEvents = selected ? eventsFor(selected.id) : []
+
+  // Filter prospects by search query and status/unit filters
+  const filteredProspects = prospects.filter((p) => {
+    const matchesSearch =
+      !searchQuery ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = !filterStatus || p.status === filterStatus
+    const matchesUnit = !filterUnitId || p.assignedUnitId === filterUnitId
+    return matchesSearch && matchesStatus && matchesUnit
+  })
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
@@ -194,13 +208,65 @@ export function CrmView() {
           )}
         </section>
 
-        {/* Pipeline board */}
+        {/* Pipeline board with search and filters */}
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
-            Pipeline
-          </h2>
+          <div className="mb-4 space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--muted)]">
+              Pipeline
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 min-w-[200px] rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)]"
+              />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as ProspectStatus | '')}
+                className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)]"
+              >
+                <option value="">All statuses</option>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="tour_scheduled">Tour Scheduled</option>
+                <option value="toured">Toured</option>
+                <option value="application">Application</option>
+                <option value="leased">Leased</option>
+                <option value="lost">Lost</option>
+              </select>
+              <select
+                value={filterUnitId}
+                onChange={(e) => setFilterUnitId(e.target.value)}
+                className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)]"
+              >
+                <option value="">All units</option>
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              {(searchQuery || filterStatus || filterUnitId) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('')
+                    setFilterStatus('')
+                    setFilterUnitId('')
+                  }}
+                  className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-medium text-[var(--muted)] transition hover:bg-[var(--surface)]"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-[var(--muted)]">
+              Showing {filteredProspects.length} of {prospects.length} prospects
+            </p>
+          </div>
           <ProspectBoard
-            prospects={prospects}
+            prospects={filteredProspects}
             onTransition={handleTransition}
             onSelectProspect={setSelected}
           />
