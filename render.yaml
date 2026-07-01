@@ -1,0 +1,49 @@
+databases:
+  - name: hillpointe-db
+    plan: free
+    databaseName: hillpointe_db
+    user: hillpointe_user
+ 
+services:
+  - type: web
+    name: hillpointe-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.api
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: hillpointe-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: hillpointe-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: hillpointe-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: hillpointe-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: hillpointe-db
+          property: database
+ 
+  - type: web
+    name: hillpointe-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile.web
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: hillpointe-api
+          property: hostport
