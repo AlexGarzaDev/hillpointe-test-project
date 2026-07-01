@@ -4,6 +4,13 @@ import { logger } from '../utils/logger';
 const useSsl = process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production';
 const maxConnectAttempts = Number.parseInt(process.env.DB_CONNECT_RETRIES || '8', 10);
 const retryDelayMs = Number.parseInt(process.env.DB_CONNECT_RETRY_DELAY_MS || '2500', 10);
+const isProduction = process.env.NODE_ENV === 'production';
+const resolvedHost = process.env.DB_HOST || process.env.PGHOST || (isProduction ? undefined : 'localhost');
+const resolvedPort = process.env.DB_PORT || process.env.PGPORT || '5432';
+const resolvedUser = process.env.DB_USER || process.env.PGUSER || (isProduction ? undefined : 'hillpointe_user');
+const resolvedPassword =
+  process.env.DB_PASSWORD || process.env.PGPASSWORD || (isProduction ? undefined : 'hillpointe_password');
+const resolvedDatabase = process.env.DB_NAME || process.env.PGDATABASE || (isProduction ? undefined : 'hillpointe_db');
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -27,8 +34,8 @@ function getConnectionTarget(): { mode: 'DATABASE_URL' | 'DB_VARS'; host?: strin
 
   return {
     mode: 'DB_VARS',
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || '5432',
+    host: resolvedHost,
+    port: resolvedPort,
   };
 }
 
@@ -56,15 +63,29 @@ const commonOptions = {
 
 // Prefer DATABASE_URL when available (common in managed hosts like Render).
 // Fall back to individual DB_* vars for local/docker development.
+if (!process.env.DATABASE_URL && isProduction) {
+  const missingVars: string[] = [];
+  if (!resolvedHost) missingVars.push('DB_HOST/PGHOST');
+  if (!resolvedUser) missingVars.push('DB_USER/PGUSER');
+  if (!resolvedPassword) missingVars.push('DB_PASSWORD/PGPASSWORD');
+  if (!resolvedDatabase) missingVars.push('DB_NAME/PGDATABASE');
+
+  if (missingVars.length > 0) {
+    throw new Error(
+      `Missing production database configuration. Set DATABASE_URL or ${missingVars.join(', ')}`,
+    );
+  }
+}
+
 const sequelize = process.env.DATABASE_URL
   ? new Sequelize(process.env.DATABASE_URL, commonOptions)
   : new Sequelize({
       ...commonOptions,
-      host: process.env.DB_HOST || 'localhost',
-      port: Number.parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USER || 'hillpointe_user',
-      password: process.env.DB_PASSWORD || 'hillpointe_password',
-      database: process.env.DB_NAME || 'hillpointe_db',
+      host: resolvedHost,
+      port: Number.parseInt(resolvedPort, 10),
+      username: resolvedUser,
+      password: resolvedPassword,
+      database: resolvedDatabase,
     });
 
 export async function initializeDatabase(): Promise<void> {
