@@ -27,6 +27,14 @@ app.use("/tours", toursRouter);
 app.use("/tasks", tasksRouter);
 app.use("/activity", activityRouter);
 
+// Support the frontend's `/api` prefix as a stable deployment-friendly alias.
+app.use("/api/version", versionRouter);
+app.use("/api/units", unitsRouter);
+app.use("/api/prospects", prospectsRouter);
+app.use("/api/tours", toursRouter);
+app.use("/api/tasks", tasksRouter);
+app.use("/api/activity", activityRouter);
+
 const frontendDistPath = path.resolve(__dirname, "../../web/dist");
 const frontendEntryPath = path.join(frontendDistPath, "index.html");
 const hasFrontendBuild = existsSync(frontendEntryPath);
@@ -38,7 +46,20 @@ if (shouldServeFrontend) {
 
   app.get("*", (req, res, next) => {
     // Keep API paths out of SPA fallback so missing API routes still become 404s.
-    const apiPaths = ["/version", "/units", "/prospects", "/tours", "/tasks", "/activity"];
+    const apiPaths = [
+      "/version",
+      "/units",
+      "/prospects",
+      "/tours",
+      "/tasks",
+      "/activity",
+      "/api/version",
+      "/api/units",
+      "/api/prospects",
+      "/api/tours",
+      "/api/tasks",
+      "/api/activity",
+    ];
     if (apiPaths.some((p) => req.path.startsWith(p))) {
       next();
       return;
