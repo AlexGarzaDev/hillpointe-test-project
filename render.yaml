@@ -40,6 +40,10 @@ services:
           property: connectionString
       - key: DB_SSL
         value: "true"
+      - key: DB_CONNECT_RETRIES
+        value: "20"
+      - key: DB_CONNECT_RETRY_DELAY_MS
+        value: "3000"
  
   - type: web
     name: hillpointe-web
