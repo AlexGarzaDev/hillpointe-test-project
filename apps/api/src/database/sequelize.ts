@@ -1,25 +1,42 @@
 import { Sequelize } from 'sequelize';
 import { logger } from '../utils/logger';
 
-// Central Sequelize instance configured from env vars with sensible local defaults.
-const sequelize = new Sequelize({
-  dialect: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USER || 'hillpointe_user',
-  password: process.env.DB_PASSWORD || 'hillpointe_password',
-  database: process.env.DB_NAME || 'hillpointe_db',
+const useSsl = process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production';
+
+const commonOptions = {
+  dialect: 'postgres' as const,
   define: {
     underscored: true,
   },
-  logging: process.env.NODE_ENV === 'development' ? (sql) => logger.debug(sql) : false,
+  logging: process.env.NODE_ENV === 'development' ? (sql: string) => logger.debug(sql) : false,
   pool: {
     max: 20,
     min: 5,
     idle: 30000,
     acquire: 60000,
   },
-});
+  dialectOptions: useSsl
+    ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      }
+    : undefined,
+};
+
+// Prefer DATABASE_URL when available (common in managed hosts like Render).
+// Fall back to individual DB_* vars for local/docker development.
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, commonOptions)
+  : new Sequelize({
+      ...commonOptions,
+      host: process.env.DB_HOST || 'localhost',
+      port: Number.parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USER || 'hillpointe_user',
+      password: process.env.DB_PASSWORD || 'hillpointe_password',
+      database: process.env.DB_NAME || 'hillpointe_db',
+    });
 
 export async function initializeDatabase(): Promise<void> {
   try {
