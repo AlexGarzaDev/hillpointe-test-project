@@ -13,6 +13,7 @@ singularUnitsRouter.get("/:id", async (req: Request, res: Response) => {
 
 // PATCH /units/:id
 singularUnitsRouter.patch("/:id", async (req: Request, res: Response) => {
+  // Partial update allows small status/name edits without resending full record.
   const unit = await store.updateUnit(req.params.id!, req.body);
   if (!unit) return sendError(res, 404, "Unit not found");
   return sendResponse(res, 200, { success: true, data: unit });

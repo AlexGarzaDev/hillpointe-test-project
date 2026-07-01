@@ -3,6 +3,7 @@ import sequelize from '../sequelize';
 import ProspectModel from './Prospect';
 import UnitModel from './Unit';
 
+// Tours represent scheduled visits linking a prospect to a specific unit/time.
 export class TourModel extends Model<InferAttributes<TourModel>, InferCreationAttributes<TourModel>> {
   declare id: CreationOptional<string>;
   declare prospectId: ForeignKey<ProspectModel['id']>;
@@ -59,6 +60,7 @@ TourModel.init(
 
 TourModel.belongsTo(ProspectModel, { foreignKey: 'prospectId', as: 'prospect' });
 TourModel.belongsTo(UnitModel, { foreignKey: 'unitId', as: 'unit' });
+// Reverse links allow querying tours from either prospect or unit perspectives.
 ProspectModel.hasMany(TourModel, { foreignKey: 'prospectId', as: 'tours' });
 UnitModel.hasMany(TourModel, { foreignKey: 'unitId', as: 'tours' });
 

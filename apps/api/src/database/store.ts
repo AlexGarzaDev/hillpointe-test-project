@@ -34,6 +34,9 @@ const ActivityEventModel = _ActivityEventModel as ModelStatic<ActivityEventInsta
 // ---------------------------------------------------------------------------
 // Sequelize-backed store
 // ---------------------------------------------------------------------------
+// Store isolates all persistence concerns behind domain-oriented methods. This
+// keeps endpoint code free of ORM-specific details and enables easier swapping
+// of backing implementations in tests or future refactors.
 
 class Store {
   // --- Units ----------------------------------------------------------------
@@ -76,6 +79,7 @@ class Store {
     return true;
   }
 
+  // DTO mappers normalize Sequelize model instances into API contract shapes.
   private unitToDTO(unit: UnitInstance): Unit {
     return {
       id: unit.id,
@@ -188,7 +192,8 @@ class Store {
     scheduledTime: string,
     excludeTourId?: string
   ): Promise<boolean> {
-    // Check for tours within ±2 hours of the scheduled time
+    // Business constraint: disallow scheduling tours within a 2-hour window
+    // for the same unit to avoid overlapping site visits.
     const scheduled = new Date(scheduledTime);
     const windowStart = new Date(scheduled.getTime() - 2 * 60 * 60 * 1000).toISOString();
     const windowEnd = new Date(scheduled.getTime() + 2 * 60 * 60 * 1000).toISOString();
@@ -259,6 +264,7 @@ class Store {
     });
 
     const ids = tasks.map((t) => t.id);
+    // Bulk-close done in parallel since task updates are independent.
     await Promise.all(tasks.map((t) => t.update({ state: 'done' })));
     return ids;
   }
@@ -296,6 +302,7 @@ class Store {
   }
 
   private activityToDTO(event: ActivityEventInstance): ActivityEvent {
+    // createdAt is database-managed; fallback keeps type guarantees in edge cases.
     return {
       id: event.id,
       prospectId: event.prospectId ?? "",

@@ -1,6 +1,7 @@
 import { Sequelize } from 'sequelize';
 import { logger } from '../utils/logger';
 
+// Central Sequelize instance configured from env vars with sensible local defaults.
 const sequelize = new Sequelize({
   dialect: 'postgres',
   host: process.env.DB_HOST || 'localhost',
@@ -22,10 +23,12 @@ const sequelize = new Sequelize({
 
 export async function initializeDatabase(): Promise<void> {
   try {
+    // Connectivity check fails fast for invalid credentials/network before sync.
     await sequelize.authenticate();
     logger.info('Database connection established successfully');
 
-    // Sync all models with the database (use alterTable for migrations in production)
+    // In non-production environments, allow schema alignment from model metadata.
+    // Production should use explicit migrations for safe, controlled evolution.
     await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
     logger.info('Database models synchronized');
   } catch (error) {

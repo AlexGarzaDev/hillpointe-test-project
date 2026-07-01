@@ -182,6 +182,7 @@ export function applyPipelineTransition(
   nextTour: Tour | undefined,
   now: Date = new Date(),
 ): PipelineTransitionResult {
+  // Rule lookup is status-driven; missing rule means transition has no side effects.
   const rule = PIPELINE_RULES.find((r) => r.toStatus === toStatus)
 
   const tasksToCreate: Omit<Task, 'id'>[] = []
@@ -189,9 +190,11 @@ export function applyPipelineTransition(
   let unitStatusUpdate: UnitStatus | null = null
 
   if (rule) {
+    // Resolve each effect deterministically so callers can apply operations in order.
     for (const effect of rule.effects) {
       switch (effect.type) {
         case 'create_task': {
+          // Tour-anchored due dates fall back to "now" if no upcoming tour exists.
           const dueDate =
             effect.dueDateAnchor === 'tour' && nextTour
               ? addDays(new Date(nextTour.scheduledTime), effect.dueDaysOffset)
@@ -205,6 +208,7 @@ export function applyPipelineTransition(
           break
         }
         case 'close_tasks': {
+          // Caller can close these ids in bulk using store-specific implementation.
           taskIdsToClose.push(
             ...openTasks.filter((t) => t.state === 'open').map((t) => t.id),
           )
@@ -237,6 +241,7 @@ export function applyPipelineTransition(
 import { z } from 'zod'
 
 export const createProspectSchema = z.object({
+  // Keep prospect entry ergonomic while still enforcing contactability.
   name: z.string().min(1, 'Name is required').min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional().nullable(),
@@ -247,12 +252,14 @@ export type CreateProspectInput = z.infer<typeof createProspectSchema>
 
 export const createUnitSchema = z.object({
   name: z.string().min(1, 'Unit name is required').min(1, 'Unit name must not be empty'),
+  // Mirrors backend enum so form and API reject invalid statuses consistently.
   status: z.enum(['available', 'held', 'leased']),
 })
 
 export type CreateUnitInput = z.infer<typeof createUnitSchema>
 
 export const transitionProspectSchema = z.object({
+  // Shared enum centralizes allowed pipeline destinations across UI and API.
   toStatus: z.enum(['new', 'contacted', 'tour_scheduled', 'toured', 'application', 'leased', 'lost']),
 })
 

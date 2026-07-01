@@ -12,6 +12,7 @@ pluralProspectsRouter.get("/", async (_req: Request, res: Response) => {
 
 // POST /prospects
 pluralProspectsRouter.post("/", async (req: Request, res: Response) => {
+  // Minimal validation here; deeper shape validation is handled at UI/shared schema layer.
   const { name, email, phone, assignedUnitId } = req.body as {
     name?: string;
     email?: string;
@@ -20,6 +21,8 @@ pluralProspectsRouter.post("/", async (req: Request, res: Response) => {
   };
   if (!name) return sendError(res, 400, "name is required");
   if (!email) return sendError(res, 400, "email is required");
+
+  // All newly created prospects enter pipeline in the default "new" status.
   const prospect = await store.createProspect({
     name,
     email,

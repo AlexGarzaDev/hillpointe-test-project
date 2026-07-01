@@ -20,6 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export function CrmView() {
+  // Independent controller hooks keep transport/data concerns separated from UI.
   const { units, addUnit, deleteUnit, refetch: refetchUnits } = useUnits()
   const { tasks, setTaskState, refetch: refetchTasks } = useTasks()
   const { eventsFor, refetch: refetchActivity } = useActivityFeed()
@@ -41,6 +42,8 @@ export function CrmView() {
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | ''>('')
   const [filterUnitId, setFilterUnitId] = useState('')
 
+  // Pipeline transitions affect related resources (tasks/activity/units), so
+  // trigger targeted refetches to keep the side panels in sync.
   const handleTransition = useCallback(
     async (prospectId: string, toStatus: ProspectStatus) => {
       await transitionStatus(prospectId, toStatus)
@@ -52,6 +55,7 @@ export function CrmView() {
 
   const handleAddProspect = useCallback(async () => {
     setProspectErrors({})
+    // Client-side schema validation mirrors backend contracts for fast feedback.
     const result = createProspectSchema.safeParse({
       name: newName.trim(),
       email: newEmail.trim(),
@@ -88,6 +92,7 @@ export function CrmView() {
 
   const handleAddUnit = useCallback(async () => {
     setUnitErrors({})
+    // Unit creation is validated with shared zod schema before API call.
     const result = createUnitSchema.safeParse({
       name: newUnitName.trim(),
       status: 'available' as const,
@@ -113,6 +118,7 @@ export function CrmView() {
   const handleScheduleTour = useCallback(async () => {
     if (!selected || !tourUnitId || !tourTime) return
     try {
+      // datetime-local returns local time; convert to ISO for API consistency.
       await scheduleTour({
         prospectId: selected.id,
         unitId: tourUnitId,
@@ -129,6 +135,7 @@ export function CrmView() {
   const handleRecordOutcome = useCallback(
     async (tourId: string, outcome: any) => {
       await recordOutcome(tourId, outcome)
+      // Outcome changes may trigger pipeline-driven task/activity updates.
       await Promise.all([refetchTasks(), refetchActivity(), refetchTours()])
     },
     [recordOutcome, refetchTasks, refetchActivity, refetchTours],
@@ -137,7 +144,7 @@ export function CrmView() {
   const selectedTasks = selected ? tasks.filter((t) => t.prospectId === selected.id) : []
   const selectedEvents = selected ? eventsFor(selected.id) : []
 
-  // Filter prospects by search query and status/unit filters
+  // Pipeline board supports quick triage by text + funnel dimension filters.
   const filteredProspects = prospects.filter((p) => {
     const matchesSearch =
       !searchQuery ||

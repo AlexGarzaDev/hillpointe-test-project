@@ -3,6 +3,7 @@ import type { Task, TaskState } from '../models/task'
 import { apiUrl } from '../models/api'
 
 export function useTasks() {
+  // Task state powers the selected prospect's to-do panel.
   const [tasks, setTasks] = useState<Task[]>([])
 
   const fetchTasks = useCallback(async () => {
@@ -18,6 +19,7 @@ export function useTasks() {
   useEffect(() => { void fetchTasks() }, [fetchTasks])
 
   const setTaskState = useCallback(async (id: string, state: TaskState) => {
+    // Persist a single task update and merge returned canonical task object.
     const res = await fetch(apiUrl(`/tasks/${id}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -28,6 +30,7 @@ export function useTasks() {
   }, [])
 
   const openTasksFor = useCallback(
+    // Derived selector reused by components that only need actionable tasks.
     (prospectId: string) =>
       tasks.filter((t) => t.prospectId === prospectId && t.state === 'open'),
     [tasks],

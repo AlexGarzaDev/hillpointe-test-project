@@ -20,11 +20,16 @@ pluralToursRouter.post("/", async (req: Request, res: Response) => {
   if (!prospectId) return sendError(res, 400, "prospectId is required");
   if (!unitId) return sendError(res, 400, "unitId is required");
   if (!scheduledTime) return sendError(res, 400, "scheduledTime is required");
+
+  // Referential checks ensure we fail fast with clear 404s before writing.
   if (!(await store.getProspect(prospectId))) return sendError(res, 404, "Prospect not found");
   if (!(await store.getUnit(unitId))) return sendError(res, 404, "Unit not found");
+
   // Check for double-booking
   const conflict = await store.checkTourConflict(unitId, scheduledTime);
   if (conflict) return sendError(res, 409, "Unit is already booked for that time");
+
+  // Outcome starts as null and is later recorded via PATCH /tours/:id.
   const tour = await store.createTour({ prospectId, unitId, scheduledTime });
   return sendResponse(res, 201, { success: true, data: tour });
 });

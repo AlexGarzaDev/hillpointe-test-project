@@ -14,6 +14,8 @@ pluralUnitsRouter.get("/", async (_req: Request, res: Response) => {
 pluralUnitsRouter.post("/", async (req: Request, res: Response) => {
   const { name, status } = req.body as { name?: string; status?: string };
   if (!name) return sendError(res, 400, "name is required");
+
+  // Unit status defaults to available; callers can override for seeded scenarios.
   const unit = await store.createUnit({
     name,
     status: (status as "available" | "held" | "leased") ?? "available",

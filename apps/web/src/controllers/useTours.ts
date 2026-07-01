@@ -3,6 +3,7 @@ import type { Tour, TourOutcome } from '../models/tour'
 import { apiUrl } from '../models/api'
 
 export function useTours() {
+  // Tour timeline drives scheduling UI and post-tour pipeline transitions.
   const [tours, setTours] = useState<Tour[]>([])
 
   const fetchTours = useCallback(async () => {
@@ -42,6 +43,7 @@ export function useTours() {
   }, [])
 
   const nextTourFor = useCallback(
+    // Pick nearest upcoming unscored tour for a prospect.
     (prospectId: string): Tour | undefined =>
       tours
         .filter((t) => t.prospectId === prospectId && t.outcome === null)

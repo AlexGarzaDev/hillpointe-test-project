@@ -34,19 +34,23 @@ singularProspectsRouter.post("/:id/transition", async (req: Request, res: Respon
   const openTasks = allTasks.filter((t: Task) => t.state === "open");
   const nextTour = await store.nextTourForProspect(prospect.id);
 
+  // Domain logic is pure and centralized in shared contracts; endpoint only
+  // gathers current state and applies returned side effects in the store.
   const result = applyPipelineTransition(prospect, toStatus, openTasks, nextTour);
 
-  // Apply mutations
+  // Apply side effects in deterministic order so response reflects final state.
   const createdTasks = await Promise.all(
     result.tasksToCreate.map((t) => store.createTask(t))
   );
   await store.closeOpenTasksForProspect(prospect.id);
 
+  // Unit status changes are optional and only valid when a unit is assigned.
   if (result.unitStatusUpdate && prospect.assignedUnitId) {
     await store.updateUnit(prospect.assignedUnitId, { status: result.unitStatusUpdate });
   }
 
   const activity = await store.appendActivity(result.activityEvent);
+  // Persist the actual status transition last for an easier audit trail.
   const updatedProspect = await store.updateProspect(prospect.id, { status: toStatus });
 
   return sendResponse(res, 200, {

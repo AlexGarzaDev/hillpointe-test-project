@@ -6,6 +6,7 @@ export const pluralTasksRouter = Router();
 
 // GET /tasks?prospectId=...
 pluralTasksRouter.get("/", async (req: Request, res: Response) => {
+  // Reused by both board-level views and selected prospect side panel.
   const { prospectId } = req.query as { prospectId?: string };
   const tasks = await store.listTasks(prospectId);
   return sendResponse(res, 200, {

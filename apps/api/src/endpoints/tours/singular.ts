@@ -19,10 +19,10 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
   const tour = await store.getTour(req.params.id!);
   if (!tour) return sendError(res, 404, "Tour not found");
 
-  // Update tour with outcome
+  // Persist outcome first so transition logic sees current tour state.
   const updatedTour = await store.updateTour(req.params.id!, { outcome: outcome ?? null });
 
-  // Tier-1 rules: outcome determines next status
+  // Tier-1 rules: tour outcomes map directly to next pipeline status.
   let nextStatus: ProspectStatus | null = null;
   if (outcome === "completed") {
     nextStatus = "toured";
@@ -30,7 +30,7 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
     nextStatus = "lost";
   }
 
-  // If outcome triggers a status change, apply pipeline transition
+  // If outcome implies movement in pipeline, apply the shared transition executor.
   if (nextStatus) {
     const prospect = await store.getProspect(tour.prospectId);
     if (prospect && prospect.status !== nextStatus) {
@@ -40,11 +40,13 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
 
       const result = applyPipelineTransition(prospect, nextStatus, filteredTasks, nextTour);
 
-      // Apply mutations
+      // Mirror the same side-effect order used in /prospects/:id/transition.
       await Promise.all(
         result.tasksToCreate.map((t) => store.createTask(t))
       );
-      await store.closeOpenTasksForProspect(prospect.id);
+      if (result.taskIdsToClose.length > 0) {
+        await store.closeOpenTasksForProspect(prospect.id);
+      }
 
       if (result.unitStatusUpdate && prospect.assignedUnitId) {
         await store.updateUnit(prospect.assignedUnitId, { status: result.unitStatusUpdate });

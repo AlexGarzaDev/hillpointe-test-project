@@ -16,6 +16,8 @@ singularTasksRouter.get("/:id", async (req: Request, res: Response) => {
 singularTasksRouter.patch("/:id", async (req: Request, res: Response) => {
   const { state } = req.body as { state?: TaskState };
   if (!state) return sendError(res, 400, "state is required");
+
+  // This endpoint only updates mutable task fields; immutable identifiers remain stable.
   const task = await store.updateTask(req.params.id!, { state });
   if (!task) return sendError(res, 404, "Task not found");
   return sendResponse(res, 200, { success: true, data: task });

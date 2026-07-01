@@ -3,6 +3,7 @@ import type { Prospect, ProspectStatus } from '../models/prospect'
 import { apiUrl } from '../models/api'
 
 export function useProspects() {
+  // Source of truth for board columns and selected prospect details.
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,14 +52,14 @@ export function useProspects() {
   }, [])
 
   const deleteProspect = useCallback(async (id: string): Promise<void> => {
-    // Optimistic UI: remove immediately
+    // Optimistic UI keeps interactions snappy while request is in-flight.
     const original = prospects
     setProspects((prev) => prev.filter((p) => p.id !== id))
     try {
       const res = await fetch(apiUrl(`/prospects/${id}`), { method: 'DELETE' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
     } catch (err) {
-      // Revert on error
+      // Roll back local state to avoid stale optimistic mismatch.
       setProspects(original)
       const msg = err instanceof Error ? err.message : 'Failed to delete prospect'
       setError(msg)
@@ -70,7 +71,7 @@ export function useProspects() {
     prospectId: string,
     toStatus: ProspectStatus,
   ): Promise<void> => {
-    // Optimistic UI: update status immediately
+    // Optimistic transition updates board position immediately.
     const original = prospects
     setProspects((prev) =>
       prev.map((p) => (p.id === prospectId ? { ...p, status: toStatus } : p))
@@ -85,10 +86,10 @@ export function useProspects() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json() as { data: { prospect: Prospect } }
       const updated = json.data.prospect
-      // Sync with server response (may have additional fields updated by pipeline)
+      // Reconcile with server because transition side effects may enrich payload.
       setProspects((prev) => prev.map((p) => (p.id === prospectId ? updated : p)))
     } catch (err) {
-      // Revert on error
+      // Undo optimistic change when backend rejects transition.
       setProspects(original)
       const msg = err instanceof Error ? err.message : 'Failed to transition prospect'
       setError(msg)

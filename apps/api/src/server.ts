@@ -17,10 +17,10 @@ const startupTraceId = "startup";
 
 async function start() {
   try {
-    // Initialize database
+    // Establish database connectivity and model sync before accepting traffic.
     await initializeDatabase();
 
-    // Start server
+    // Boot HTTP listener only after dependencies are ready.
     const server = app.listen(port, () => {
       logger.info("Server started", {
         traceId: startupTraceId,
@@ -36,7 +36,7 @@ async function start() {
       });
     });
 
-    // Graceful shutdown
+    // Handle orchestrator/container shutdown requests without dropping logs abruptly.
     process.on("SIGTERM", async () => {
       logger.info("SIGTERM received, shutting down gracefully", {
         traceId: "shutdown",

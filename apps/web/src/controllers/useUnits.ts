@@ -3,6 +3,7 @@ import type { Unit, UnitStatus } from '../models/unit'
 import { apiUrl } from '../models/api'
 
 export function useUnits() {
+  // Unit inventory is referenced by prospect assignment and tour scheduling.
   const [units, setUnits] = useState<Unit[]>([])
 
   const fetchUnits = useCallback(async () => {
@@ -18,6 +19,7 @@ export function useUnits() {
   useEffect(() => { void fetchUnits() }, [fetchUnits])
 
   const addUnit = useCallback(async (data: { name: string; status?: UnitStatus }): Promise<Unit> => {
+    // Default status is available so callers only provide a name in common case.
     const res = await fetch(apiUrl('/units'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -40,6 +42,7 @@ export function useUnits() {
   }, [])
 
   const deleteUnit = useCallback(async (id: string): Promise<void> => {
+    // Fire-and-forget delete; server enforces any relational constraints.
     await fetch(apiUrl(`/units/${id}`), { method: 'DELETE' })
     setUnits((prev) => prev.filter((u) => u.id !== id))
   }, [])

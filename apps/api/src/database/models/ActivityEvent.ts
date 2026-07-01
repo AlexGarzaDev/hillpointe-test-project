@@ -2,6 +2,7 @@ import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOpt
 import sequelize from '../sequelize';
 import ProspectModel from './Prospect';
 
+// Activity events provide an append-only audit trail for pipeline movements.
 export class ActivityEventModel extends Model<InferAttributes<ActivityEventModel>, InferCreationAttributes<ActivityEventModel>> {
   declare id: CreationOptional<string>;
   declare prospectId?: ForeignKey<ProspectModel['id']> | null;
@@ -50,6 +51,7 @@ ActivityEventModel.init(
     sequelize,
     modelName: 'ActivityEvent',
     tableName: 'activity_events',
+    // Table relies on created_at only; updates are not tracked for immutable events.
     timestamps: false,
     createdAt: 'created_at',
   }

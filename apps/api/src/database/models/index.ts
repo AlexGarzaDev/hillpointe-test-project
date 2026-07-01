@@ -1,4 +1,4 @@
-// Re-export all models for easy access
+// Barrel export so bootstrap/store code can import model symbols from one place.
 export { UnitModel } from './Unit';
 export { ProspectModel } from './Prospect';
 export { TourModel } from './Tour';

@@ -2,6 +2,7 @@ import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOpt
 import sequelize from '../sequelize';
 import ProspectModel from './Prospect';
 
+// Tasks capture operational follow-ups generated manually or by pipeline rules.
 export class TaskModel extends Model<InferAttributes<TaskModel>, InferCreationAttributes<TaskModel>> {
   declare id: CreationOptional<string>;
   declare prospectId: ForeignKey<ProspectModel['id']>;
@@ -54,6 +55,7 @@ TaskModel.init(
 );
 
 TaskModel.belongsTo(ProspectModel, { foreignKey: 'prospectId', as: 'prospect' });
+// Deleting a prospect cascades task removal to avoid orphan records.
 ProspectModel.hasMany(TaskModel, { foreignKey: 'prospectId', as: 'tasks' });
 
 export default TaskModel;

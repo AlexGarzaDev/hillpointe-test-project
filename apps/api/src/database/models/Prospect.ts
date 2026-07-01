@@ -2,6 +2,7 @@ import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOpt
 import sequelize from '../sequelize';
 import UnitModel from './Unit';
 
+// Prospect is the central CRM record that moves through the leasing pipeline.
 export class ProspectModel extends Model<InferAttributes<ProspectModel>, InferCreationAttributes<ProspectModel>> {
   declare id: CreationOptional<string>;
   declare name: string;
@@ -27,6 +28,7 @@ ProspectModel.init(
     email: {
       type: DataTypes.STRING(255),
       allowNull: false,
+      // Duplicate emails are rejected at DB level to keep lead identity stable.
       unique: true,
     },
     phone: {
@@ -59,6 +61,7 @@ ProspectModel.init(
 );
 
 ProspectModel.belongsTo(UnitModel, { foreignKey: 'assignedUnitId', as: 'unit' });
+// Reverse association enables eager loading unit-to-prospects when needed.
 UnitModel.hasMany(ProspectModel, { foreignKey: 'assignedUnitId', as: 'prospects' });
 
 export default ProspectModel;

@@ -9,13 +9,17 @@ import { logger } from "./utils/logger";
 import { attachRequestContext } from "./middleware/request-context";
 import { getOrCreateTraceId } from "./utils/trace-id";
 
+// Express app composition for both API endpoints and optional static web serving.
 export const app = express();
 
+// Global middleware order matters: security headers, CORS, JSON body parsing,
+// then request-scoped tracing/logging for all downstream handlers.
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(attachRequestContext);
 
+// API route mounts. Each router encapsulates resource-specific CRUD + actions.
 app.use("/version", versionRouter);
 app.use("/units", unitsRouter);
 app.use("/prospects", prospectsRouter);
@@ -28,10 +32,12 @@ const frontendEntryPath = path.join(frontendDistPath, "index.html");
 const hasFrontendBuild = existsSync(frontendEntryPath);
 const shouldServeFrontend = hasFrontendBuild && process.env.NODE_ENV !== "test";
 
+// In development/test without a built frontend, API still runs standalone.
 if (shouldServeFrontend) {
   app.use(express.static(frontendDistPath));
 
   app.get("*", (req, res, next) => {
+    // Keep API paths out of SPA fallback so missing API routes still become 404s.
     const apiPaths = ["/version", "/units", "/prospects", "/tours", "/tasks", "/activity"];
     if (apiPaths.some((p) => req.path.startsWith(p))) {
       next();
