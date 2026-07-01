@@ -1,5 +1,6 @@
 import { app } from "../app";
 import { logger } from "../utils/logger";
+import * as sequelizeModule from "../database/sequelize";
 
 describe("server bootstrap", () => {
   const originalPort = process.env.PORT;
@@ -9,12 +10,15 @@ describe("server bootstrap", () => {
     process.env.PORT = originalPort;
   });
 
-  it("starts on configured port and logs startup plus server errors", () => {
+  it("starts on configured port and logs startup plus server errors", async () => {
     const onMock = jest.fn();
     const listenSpy = jest.spyOn(app, "listen").mockImplementation(((port: number, callback?: () => void) => {
       callback?.();
       return { on: onMock } as never;
     }) as never);
+    const initializeSpy = jest
+      .spyOn(sequelizeModule, "initializeDatabase")
+      .mockResolvedValue(undefined);
     const infoSpy = jest.spyOn(logger, "info").mockImplementation(() => undefined);
     const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
@@ -24,6 +28,11 @@ describe("server bootstrap", () => {
     delete require.cache[serverModulePath];
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require(serverModulePath);
+
+    // Server startup is async because database init is awaited first.
+    await Promise.resolve();
+
+    expect(initializeSpy).toHaveBeenCalledTimes(1);
 
     expect(listenSpy).toHaveBeenCalledWith(4321, expect.any(Function));
     expect(infoSpy).toHaveBeenCalledWith(
