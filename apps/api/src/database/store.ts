@@ -1,4 +1,6 @@
 import type { ModelStatic } from "sequelize";
+import { Op } from "sequelize";
+import sequelize from "./sequelize";
 import type {
   Unit,
   Prospect,
@@ -179,6 +181,29 @@ class Store {
       order: [['scheduledTime', 'ASC']],
     });
     return tour ? this.tourToDTO(tour) : undefined;
+  }
+
+  async checkTourConflict(
+    unitId: string,
+    scheduledTime: string,
+    excludeTourId?: string
+  ): Promise<boolean> {
+    // Check for tours within ±2 hours of the scheduled time
+    const scheduled = new Date(scheduledTime);
+    const windowStart = new Date(scheduled.getTime() - 2 * 60 * 60 * 1000).toISOString();
+    const windowEnd = new Date(scheduled.getTime() + 2 * 60 * 60 * 1000).toISOString();
+
+    const conflictingTour = await TourModel.findOne({
+      where: {
+        unitId,
+        scheduledTime: {
+          [Op.between]: [windowStart, windowEnd],
+        },
+        ...(excludeTourId ? { id: { [Op.ne]: excludeTourId } } : {}),
+      },
+    });
+
+    return !!conflictingTour;
   }
 
   private tourToDTO(tour: TourInstance): Tour {

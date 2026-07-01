@@ -5,9 +5,11 @@ import { useProspects } from '../controllers/useProspects'
 import { useTasks } from '../controllers/useTasks'
 import { useUnits } from '../controllers/useUnits'
 import { useActivityFeed } from '../controllers/useActivityFeed'
+import { useTours } from '../controllers/useTours'
 import { ProspectBoard } from './ProspectBoard'
 import { TaskList } from './TaskList'
 import { ActivityFeed } from './ActivityFeed'
+import { TourList } from './TourList'
 import type { TaskState } from '../models/task'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -20,6 +22,7 @@ export function CrmView() {
   const { units, addUnit, deleteUnit, refetch: refetchUnits } = useUnits()
   const { tasks, setTaskState, refetch: refetchTasks } = useTasks()
   const { eventsFor, refetch: refetchActivity } = useActivityFeed()
+  const { tours, scheduleTour, recordOutcome, refetch: refetchTours } = useTours()
   const { prospects, addProspect, deleteProspect, transitionStatus } = useProspects()
 
   const [selected, setSelected] = useState<Prospect | null>(null)
@@ -28,6 +31,9 @@ export function CrmView() {
   const [newEmail, setNewEmail] = useState('')
   const [showAddUnit, setShowAddUnit] = useState(false)
   const [newUnitName, setNewUnitName] = useState('')
+  const [showScheduleTour, setShowScheduleTour] = useState(false)
+  const [tourUnitId, setTourUnitId] = useState('')
+  const [tourTime, setTourTime] = useState('')
 
   const handleTransition = useCallback(
     async (prospectId: string, toStatus: ProspectStatus) => {
@@ -57,6 +63,30 @@ export function CrmView() {
     setNewUnitName('')
     setShowAddUnit(false)
   }, [addUnit, newUnitName])
+
+  const handleScheduleTour = useCallback(async () => {
+    if (!selected || !tourUnitId || !tourTime) return
+    try {
+      await scheduleTour({
+        prospectId: selected.id,
+        unitId: tourUnitId,
+        scheduledTime: new Date(tourTime).toISOString(),
+      })
+      setShowScheduleTour(false)
+      setTourUnitId('')
+      setTourTime('')
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to schedule tour')
+    }
+  }, [selected, tourUnitId, tourTime, scheduleTour])
+
+  const handleRecordOutcome = useCallback(
+    async (tourId: string, outcome: any) => {
+      await recordOutcome(tourId, outcome)
+      await Promise.all([refetchTasks(), refetchActivity(), refetchTours()])
+    },
+    [recordOutcome, refetchTasks, refetchActivity, refetchTours],
+  )
 
   const selectedTasks = selected ? tasks.filter((t) => t.prospectId === selected.id) : []
   const selectedEvents = selected ? eventsFor(selected.id) : []
@@ -197,13 +227,59 @@ export function CrmView() {
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Tasks</p>
                 <TaskList
                   tasks={selectedTasks}
                   onStateChange={(id, state: TaskState) => { void setTaskState(id, state) }}
                 />
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Tours</p>
+                <div className="space-y-3">
+                  <TourList
+                    tours={tours}
+                    units={units}
+                    prospectId={selected.id}
+                    onRecordOutcome={handleRecordOutcome}
+                  />
+                  <button
+                    className="w-full rounded-lg bg-[var(--ink)] px-3 py-2 text-xs font-medium text-white transition hover:opacity-80"
+                    onClick={() => setShowScheduleTour((v) => !v)}
+                  >
+                    {showScheduleTour ? 'Cancel' : '+ Schedule Tour'}
+                  </button>
+                  {showScheduleTour && (
+                    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+                      <select
+                        value={tourUnitId}
+                        onChange={(e) => setTourUnitId(e.target.value)}
+                        className="rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-xs"
+                      >
+                        <option value="">Select unit...</option>
+                        {units.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="datetime-local"
+                        value={tourTime}
+                        onChange={(e) => setTourTime(e.target.value)}
+                        className="rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-xs"
+                      />
+                      <button
+                        onClick={() => { void handleScheduleTour() }}
+                        disabled={!tourUnitId || !tourTime}
+                        className="rounded-lg bg-green-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-green-700 disabled:opacity-40"
+                      >
+                        Schedule
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">Activity</p>

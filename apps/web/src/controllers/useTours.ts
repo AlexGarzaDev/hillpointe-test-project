@@ -1,19 +1,43 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { Tour, TourOutcome } from '../models/tour'
 
-export function useTours(initial: Tour[] = []) {
-  const [tours, setTours] = useState<Tour[]>(initial)
+export function useTours() {
+  const [tours, setTours] = useState<Tour[]>([])
 
-  const scheduleTour = useCallback((tour: Omit<Tour, 'id' | 'outcome'>) => {
-    const next: Tour = { ...tour, id: crypto.randomUUID(), outcome: null }
-    setTours((prev) => [...prev, next])
-    return next
+  const fetchTours = useCallback(async () => {
+    const res = await fetch('/tours')
+    const json = await res.json()
+    setTours(json.data ?? [])
   }, [])
 
-  const recordOutcome = useCallback((id: string, outcome: TourOutcome) => {
-    setTours((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, outcome } : t)),
-    )
+  useEffect(() => {
+    void fetchTours()
+  }, [fetchTours])
+
+  const scheduleTour = useCallback(async (data: { prospectId: string; unitId: string; scheduledTime: string }) => {
+    const res = await fetch('/tours', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.message || 'Failed to schedule tour')
+    }
+    const tour = (await res.json()).data
+    setTours((prev) => [...prev, tour])
+    return tour
+  }, [])
+
+  const recordOutcome = useCallback(async (id: string, outcome: TourOutcome) => {
+    const res = await fetch(`/tours/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ outcome }),
+    })
+    const updated = (await res.json()).data
+    setTours((prev) => prev.map((t) => (t.id === id ? updated : t)))
+    return updated
   }, [])
 
   const nextTourFor = useCallback(
@@ -28,5 +52,6 @@ export function useTours(initial: Tour[] = []) {
     [tours],
   )
 
-  return { tours, scheduleTour, recordOutcome, nextTourFor }
+  return { tours, scheduleTour, recordOutcome, nextTourFor, refetch: fetchTours }
 }
+
