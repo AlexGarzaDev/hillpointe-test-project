@@ -36,3 +36,36 @@ body {
 code {
   font-family: var(--font-mono);
 }
+
+.pipeline-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(15 22 47 / 0.4) transparent;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pipeline-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.pipeline-scroll::-webkit-scrollbar-track {
+  background: rgb(15 22 47 / 0.08);
+  border-radius: 999px;
+}
+
+.pipeline-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, rgb(15 22 47 / 0.25), rgb(73 82 103 / 0.6));
+  border-radius: 999px;
+  border: 2px solid rgb(241 244 234 / 0.9);
+}
+
+.pipeline-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, rgb(15 22 47 / 0.35), rgb(73 82 103 / 0.75));
+}
+
+@media (max-width: 768px) {
+  .pipeline-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+}

@@ -13,13 +13,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/version': 'http://localhost:3000',
-      '/status': 'http://localhost:3000',
-      '/prospects': 'http://localhost:3000',
-      '/units': 'http://localhost:3000',
-      '/tasks': 'http://localhost:3000',
-      '/activity': 'http://localhost:3000',
-      '/tours': 'http://localhost:3000',
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
     },
   },
 })

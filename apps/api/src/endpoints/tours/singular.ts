@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { store } from "../../database/store";
 import { sendResponse, sendError } from "../../utils/http-response";
 import { applyPipelineTransition } from "../../database/pipeline";
-import type { TourOutcome, ProspectStatus } from "../../types/domain";
+import type { TourOutcome, ProspectStatus, Task } from "../../types/domain";
 
 export const singularToursRouter = Router();
 
@@ -35,7 +35,7 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
     const prospect = await store.getProspect(tour.prospectId);
     if (prospect && prospect.status !== nextStatus) {
       const openTasks = await store.listTasks(prospect.id);
-      const filteredTasks = openTasks.filter((t) => t.state === "open");
+      const filteredTasks = openTasks.filter((t: Task) => t.state === "open");
       const nextTour = await store.nextTourForProspect(prospect.id);
 
       const result = applyPipelineTransition(prospect, nextStatus, filteredTasks, nextTour);

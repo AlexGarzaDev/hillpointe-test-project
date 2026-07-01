@@ -42,13 +42,13 @@ export function ProspectBoard({
   onSelectProspect,
 }: ProspectBoardProps) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
       {PIPELINE_STAGES.map((stage) => {
         const cards = prospects.filter((p) => p.status === stage)
         return (
           <div
             key={stage}
-            className={`flex min-w-[200px] flex-col rounded-2xl border p-3 ${STAGE_COLORS[stage]}`}
+            className={`flex min-w-0 flex-col rounded-2xl border p-3 ${STAGE_COLORS[stage]}`}
           >
             <div className="mb-3 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">

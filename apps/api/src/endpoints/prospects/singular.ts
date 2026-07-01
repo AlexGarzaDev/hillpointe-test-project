@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { store } from "../../database/store";
 import { applyPipelineTransition } from "../../database/pipeline";
 import { sendResponse, sendError } from "../../utils/http-response";
-import type { ProspectStatus } from "../../types/domain";
+import type { ProspectStatus, Task } from "../../types/domain";
 
 export const singularProspectsRouter = Router();
 
@@ -31,7 +31,7 @@ singularProspectsRouter.post("/:id/transition", async (req: Request, res: Respon
   if (!prospect) return sendError(res, 404, "Prospect not found");
 
   const allTasks = await store.listTasks(prospect.id);
-  const openTasks = allTasks.filter((t) => t.state === "open");
+  const openTasks = allTasks.filter((t: Task) => t.state === "open");
   const nextTour = await store.nextTourForProspect(prospect.id);
 
   const result = applyPipelineTransition(prospect, toStatus, openTasks, nextTour);

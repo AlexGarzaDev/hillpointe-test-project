@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { Prospect, ProspectStatus } from '../models/prospect'
 import type { Unit } from '../models/unit'
+import { createProspectSchema, createUnitSchema } from '@hillpointe/shared'
 import { useProspects } from '../controllers/useProspects'
 import { useTasks } from '../controllers/useTasks'
 import { useUnits } from '../controllers/useUnits'
@@ -23,14 +24,16 @@ export function CrmView() {
   const { tasks, setTaskState, refetch: refetchTasks } = useTasks()
   const { eventsFor, refetch: refetchActivity } = useActivityFeed()
   const { tours, scheduleTour, recordOutcome, refetch: refetchTours } = useTours()
-  const { prospects, addProspect, deleteProspect, transitionStatus } = useProspects()
+  const { prospects, isLoading, error, addProspect, deleteProspect, transitionStatus } = useProspects()
 
   const [selected, setSelected] = useState<Prospect | null>(null)
   const [showAddProspect, setShowAddProspect] = useState(false)
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
+  const [prospectErrors, setProspectErrors] = useState<Record<string, string>>({})
   const [showAddUnit, setShowAddUnit] = useState(false)
   const [newUnitName, setNewUnitName] = useState('')
+  const [unitErrors, setUnitErrors] = useState<Record<string, string>>({})
   const [showScheduleTour, setShowScheduleTour] = useState(false)
   const [tourUnitId, setTourUnitId] = useState('')
   const [tourTime, setTourTime] = useState('')
@@ -48,12 +51,35 @@ export function CrmView() {
   )
 
   const handleAddProspect = useCallback(async () => {
-    if (!newName.trim() || !newEmail.trim()) return
-    await addProspect({ name: newName.trim(), email: newEmail.trim(), assignedUnitId: null })
-    setNewName('')
-    setNewEmail('')
-    setShowAddProspect(false)
-  }, [addProspect, newName, newEmail])
+    setProspectErrors({})
+    const result = createProspectSchema.safeParse({
+      name: newName.trim(),
+      email: newEmail.trim(),
+      assignedUnitId: null,
+    })
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        const path = err.path[0] as string
+        errors[path] = err.message
+      })
+      setProspectErrors(errors)
+      return
+    }
+    try {
+      await addProspect({
+        name: result.data.name,
+        email: result.data.email,
+        phone: result.data.phone ?? undefined,
+        assignedUnitId: result.data.assignedUnitId ?? null,
+      })
+      setNewName('')
+      setNewEmail('')
+      setShowAddProspect(false)
+    } catch {
+      setProspectErrors({ submit: 'Failed to add prospect' })
+    }
+  }, [newName, newEmail, addProspect])
 
   const handleDeleteProspect = useCallback(async (id: string) => {
     await deleteProspect(id)
@@ -61,11 +87,28 @@ export function CrmView() {
   }, [deleteProspect])
 
   const handleAddUnit = useCallback(async () => {
-    if (!newUnitName.trim()) return
-    await addUnit({ name: newUnitName.trim(), status: 'available' })
-    setNewUnitName('')
-    setShowAddUnit(false)
-  }, [addUnit, newUnitName])
+    setUnitErrors({})
+    const result = createUnitSchema.safeParse({
+      name: newUnitName.trim(),
+      status: 'available' as const,
+    })
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        const path = err.path[0] as string
+        errors[path] = err.message
+      })
+      setUnitErrors(errors)
+      return
+    }
+    try {
+      await addUnit(result.data)
+      setNewUnitName('')
+      setShowAddUnit(false)
+    } catch {
+      setUnitErrors({ submit: 'Failed to add unit' })
+    }
+  }, [newUnitName, addUnit])
 
   const handleScheduleTour = useCallback(async () => {
     if (!selected || !tourUnitId || !tourTime) return
@@ -110,9 +153,13 @@ export function CrmView() {
       {/* Header */}
       <header className="border-b border-[var(--border)] bg-white/80 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold">
-            Leasing CRM
-          </h1>
+          <div>
+            <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+              Leasing CRM
+            </h1>
+            {isLoading && <p className="mt-1 text-xs text-[var(--muted)]">Loading prospects...</p>}
+            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+          </div>
           <button
             className="rounded-xl bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-80"
             onClick={() => setShowAddProspect((v) => !v)}
@@ -128,19 +175,33 @@ export function CrmView() {
           <div className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-base font-semibold">New Prospect</h2>
             <div className="flex flex-wrap gap-3">
-              <input
-                className="flex-1 min-w-[180px] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)]"
-                placeholder="Full name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
-              <input
-                className="flex-1 min-w-[180px] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)]"
-                placeholder="Email address"
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-              />
+              <div className="flex-1 min-w-[180px]">
+                <input
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)] ${
+                    prospectErrors.name ? 'border-red-300 bg-red-50' : 'border-[var(--border)] bg-[var(--surface)]'
+                  }`}
+                  placeholder="Full name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+                {prospectErrors.name && (
+                  <p className="mt-1 text-xs text-red-600">{prospectErrors.name}</p>
+                )}
+              </div>
+              <div className="flex-1 min-w-[180px]">
+                <input
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)] ${
+                    prospectErrors.email ? 'border-red-300 bg-red-50' : 'border-[var(--border)] bg-[var(--surface)]'
+                  }`}
+                  placeholder="Email address"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                />
+                {prospectErrors.email && (
+                  <p className="mt-1 text-xs text-red-600">{prospectErrors.email}</p>
+                )}
+              </div>
               <button
                 className="rounded-xl bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-80 disabled:opacity-40"
                 disabled={!newName.trim() || !newEmail.trim()}
@@ -149,6 +210,9 @@ export function CrmView() {
                 Add
               </button>
             </div>
+            {prospectErrors.submit && (
+              <p className="mt-3 text-sm text-red-600">{prospectErrors.submit}</p>
+            )}
           </div>
         )}
 
@@ -168,12 +232,19 @@ export function CrmView() {
 
           {showAddUnit && (
             <div className="mb-3 flex flex-wrap gap-3 rounded-2xl border border-[var(--border)] bg-white p-4 shadow-sm">
-              <input
-                className="flex-1 min-w-[160px] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)]"
-                placeholder="Unit name (e.g. 301A)"
-                value={newUnitName}
-                onChange={(e) => setNewUnitName(e.target.value)}
-              />
+              <div className="flex-1 min-w-[160px]">
+                <input
+                  className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--ink)] ${
+                    unitErrors.name ? 'border-red-300 bg-red-50' : 'border-[var(--border)] bg-[var(--surface)]'
+                  }`}
+                  placeholder="Unit name (e.g. 301A)"
+                  value={newUnitName}
+                  onChange={(e) => setNewUnitName(e.target.value)}
+                />
+                {unitErrors.name && (
+                  <p className="mt-1 text-xs text-red-600">{unitErrors.name}</p>
+                )}
+              </div>
               <button
                 className="rounded-xl bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-80 disabled:opacity-40"
                 disabled={!newUnitName.trim()}
@@ -181,6 +252,9 @@ export function CrmView() {
               >
                 Add
               </button>
+              {unitErrors.submit && (
+                <p className="w-full text-sm text-red-600">{unitErrors.submit}</p>
+              )}
             </div>
           )}
 
@@ -265,11 +339,25 @@ export function CrmView() {
               Showing {filteredProspects.length} of {prospects.length} prospects
             </p>
           </div>
-          <ProspectBoard
-            prospects={filteredProspects}
-            onTransition={handleTransition}
-            onSelectProspect={setSelected}
-          />
+          {isLoading ? (
+            <div className="rounded-2xl border border-[var(--border)] bg-white p-8 text-center">
+              <p className="text-sm text-[var(--muted)]">Loading prospects...</p>
+            </div>
+          ) : filteredProspects.length === 0 ? (
+            <div className="rounded-2xl border border-[var(--border)] bg-white p-8 text-center">
+              <p className="text-sm text-[var(--muted)]">
+                {searchQuery || filterStatus || filterUnitId
+                  ? 'No prospects match your filters'
+                  : 'No prospects yet. Add one to get started!'}
+              </p>
+            </div>
+          ) : (
+            <ProspectBoard
+              prospects={filteredProspects}
+              onTransition={handleTransition}
+              onSelectProspect={setSelected}
+            />
+          )}
         </section>
 
         {/* Detail panel for selected prospect */}

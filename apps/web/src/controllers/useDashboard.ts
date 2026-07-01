@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ApiStatus, VersionResponse } from '../models/api'
+import { apiUrl, type ApiStatus, type VersionResponse } from '../models/api'
 
 export function useDashboard(): ApiStatus & { statusLabel: string } {
   const [name, setName] = useState<string>('')
@@ -21,7 +21,7 @@ export function useDashboard(): ApiStatus & { statusLabel: string } {
         setIsLoading(true)
         setError('')
 
-        const response = await fetch('/version', {
+        const response = await fetch(apiUrl('/version'), {
           signal: abortController.signal,
         })
 

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Task, TaskState } from '../models/task'
+import { apiUrl } from '../models/api'
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([])
 
   const fetchTasks = useCallback(async () => {
     try {
-      const res = await fetch('/tasks')
+      const res = await fetch(apiUrl('/tasks'))
       const json = await res.json() as { data: Task[] }
       setTasks(json.data ?? [])
     } catch (err) {
@@ -17,7 +18,7 @@ export function useTasks() {
   useEffect(() => { void fetchTasks() }, [fetchTasks])
 
   const setTaskState = useCallback(async (id: string, state: TaskState) => {
-    const res = await fetch(`/tasks/${id}`, {
+    const res = await fetch(apiUrl(`/tasks/${id}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ state }),

@@ -3,17 +3,22 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root package.json
+# Copy root manifests
 COPY package.json package-lock.json ./
 
-# Copy web package.json
-COPY apps/web ./apps/web
+# Copy workspace manifests required for npm workspaces
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
 
 # Install dependencies
 RUN npm ci
 
-# Build web
-RUN npm run frontend:build
+# Copy source code
+COPY apps/web ./apps/web
+COPY packages/shared ./packages/shared
+
+# Build shared workspace first, then web app
+RUN npm run build:shared && npm run frontend:build
 
 # Runtime stage - use nginx to serve static files
 FROM nginx:alpine

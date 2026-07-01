@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { ActivityEvent } from '../models/activity-event'
+import { apiUrl } from '../models/api'
 
 export function useActivityFeed() {
   const [events, setEvents] = useState<ActivityEvent[]>([])
 
   const fetchEvents = useCallback(async () => {
     try {
-      const res = await fetch('/activity')
+      const res = await fetch(apiUrl('/activity'))
       const json = await res.json() as { data: ActivityEvent[] }
       setEvents(json.data ?? [])
     } catch (err) {

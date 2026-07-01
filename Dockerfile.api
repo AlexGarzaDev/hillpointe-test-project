@@ -3,34 +3,41 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root package.json
+# Copy root manifests
 COPY package.json package-lock.json ./
 
-# Copy api package.json
-COPY apps/api ./apps/api
+# Copy workspace manifests required for npm workspaces
+COPY apps/api/package.json ./apps/api/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
 
 # Install dependencies
 RUN npm ci
 
-# Build API
-RUN npm run backend:build
+# Copy source code
+COPY apps/api ./apps/api
+COPY packages/shared ./packages/shared
+
+# Build shared workspace first, then API
+RUN npm run build:shared && npm run backend:build
 
 # Runtime stage
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy root package.json for runtime
+# Copy root manifests for runtime install
 COPY package.json package-lock.json ./
 
-# Copy api directory
-COPY apps/api ./apps/api
+# Copy runtime workspace manifests
+COPY apps/api/package.json ./apps/api/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
 
 # Install production dependencies only
 RUN npm ci --omit=dev
 
-# Copy built files from builder stage
+# Copy built artifacts from builder stage
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # Expose API port
 EXPOSE 3000

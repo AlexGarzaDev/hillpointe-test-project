@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Unit, UnitStatus } from '../models/unit'
+import { apiUrl } from '../models/api'
 
 export function useUnits() {
   const [units, setUnits] = useState<Unit[]>([])
 
   const fetchUnits = useCallback(async () => {
     try {
-      const res = await fetch('/units')
+      const res = await fetch(apiUrl('/units'))
       const json = await res.json() as { data: Unit[] }
       setUnits(json.data ?? [])
     } catch (err) {
@@ -17,7 +18,7 @@ export function useUnits() {
   useEffect(() => { void fetchUnits() }, [fetchUnits])
 
   const addUnit = useCallback(async (data: { name: string; status?: UnitStatus }): Promise<Unit> => {
-    const res = await fetch('/units', {
+    const res = await fetch(apiUrl('/units'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, status: data.status ?? 'available' }),
@@ -29,7 +30,7 @@ export function useUnits() {
   }, [])
 
   const updateUnitStatus = useCallback(async (id: string, status: UnitStatus): Promise<void> => {
-    const res = await fetch(`/units/${id}`, {
+    const res = await fetch(apiUrl(`/units/${id}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
@@ -39,7 +40,7 @@ export function useUnits() {
   }, [])
 
   const deleteUnit = useCallback(async (id: string): Promise<void> => {
-    await fetch(`/units/${id}`, { method: 'DELETE' })
+    await fetch(apiUrl(`/units/${id}`), { method: 'DELETE' })
     setUnits((prev) => prev.filter((u) => u.id !== id))
   }, [])
 

@@ -229,3 +229,45 @@ export function applyPipelineTransition(
 
   return { tasksToCreate, taskIdsToClose, unitStatusUpdate, activityEvent }
 }
+
+// ---------------------------------------------------------------------------
+// Validation schemas — shared form validation using Zod
+// ---------------------------------------------------------------------------
+
+import { z } from 'zod'
+
+export const createProspectSchema = z.object({
+  name: z.string().min(1, 'Name is required').min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional().nullable(),
+  assignedUnitId: z.string().nullable().optional(),
+})
+
+export type CreateProspectInput = z.infer<typeof createProspectSchema>
+
+export const createUnitSchema = z.object({
+  name: z.string().min(1, 'Unit name is required').min(1, 'Unit name must not be empty'),
+  status: z.enum(['available', 'held', 'leased']),
+})
+
+export type CreateUnitInput = z.infer<typeof createUnitSchema>
+
+export const transitionProspectSchema = z.object({
+  toStatus: z.enum(['new', 'contacted', 'tour_scheduled', 'toured', 'application', 'leased', 'lost']),
+})
+
+export type TransitionProspectInput = z.infer<typeof transitionProspectSchema>
+
+export const scheduleTourSchema = z.object({
+  prospectId: z.string().uuid('Invalid prospect ID'),
+  unitId: z.string().uuid('Invalid unit ID'),
+  scheduledTime: z.string().datetime('Invalid date/time'),
+})
+
+export type ScheduleTourInput = z.infer<typeof scheduleTourSchema>
+
+export const recordTourOutcomeSchema = z.object({
+  outcome: z.enum(['completed', 'no_show', 'cancelled']).nullable(),
+})
+
+export type RecordTourOutcomeInput = z.infer<typeof recordTourOutcomeSchema>

@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { Tour, TourOutcome } from '../models/tour'
+import { apiUrl } from '../models/api'
 
 export function useTours() {
   const [tours, setTours] = useState<Tour[]>([])
 
   const fetchTours = useCallback(async () => {
-    const res = await fetch('/tours')
+    const res = await fetch(apiUrl('/tours'))
     const json = await res.json()
     setTours(json.data ?? [])
   }, [])
@@ -15,7 +16,7 @@ export function useTours() {
   }, [fetchTours])
 
   const scheduleTour = useCallback(async (data: { prospectId: string; unitId: string; scheduledTime: string }) => {
-    const res = await fetch('/tours', {
+    const res = await fetch(apiUrl('/tours'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -30,7 +31,7 @@ export function useTours() {
   }, [])
 
   const recordOutcome = useCallback(async (id: string, outcome: TourOutcome) => {
-    const res = await fetch(`/tours/${id}`, {
+    const res = await fetch(apiUrl(`/tours/${id}`), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ outcome }),

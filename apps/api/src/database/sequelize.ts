@@ -8,6 +8,9 @@ const sequelize = new Sequelize({
   username: process.env.DB_USER || 'hillpointe_user',
   password: process.env.DB_PASSWORD || 'hillpointe_password',
   database: process.env.DB_NAME || 'hillpointe_db',
+  define: {
+    underscored: true,
+  },
   logging: process.env.NODE_ENV === 'development' ? (sql) => logger.debug(sql) : false,
   pool: {
     max: 20,
