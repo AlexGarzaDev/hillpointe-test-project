@@ -1,7 +1,8 @@
 import { Sequelize } from 'sequelize';
 import { logger } from '../utils/logger';
 
-const useSsl = process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production';
+const dbSslOverride = process.env.DB_SSL;
+const useSsl = dbSslOverride ? dbSslOverride === 'true' : process.env.NODE_ENV === 'production';
 const maxConnectAttempts = Number.parseInt(process.env.DB_CONNECT_RETRIES || '8', 10);
 const retryDelayMs = Number.parseInt(process.env.DB_CONNECT_RETRY_DELAY_MS || '2500', 10);
 const isProduction = process.env.NODE_ENV === 'production';
