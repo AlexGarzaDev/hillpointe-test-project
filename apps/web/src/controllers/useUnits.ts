@@ -16,7 +16,12 @@ export function useUnits() {
     }
   }, [])
 
-  useEffect(() => { void fetchUnits() }, [fetchUnits])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchUnits()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchUnits])
 
   const addUnit = useCallback(async (data: { name: string; status?: UnitStatus }): Promise<Unit> => {
     // Default status is available so callers only provide a name in common case.

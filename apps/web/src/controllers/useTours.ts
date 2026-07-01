@@ -13,7 +13,10 @@ export function useTours() {
   }, [])
 
   useEffect(() => {
-    void fetchTours()
+    const timer = setTimeout(() => {
+      void fetchTours()
+    }, 0)
+    return () => clearTimeout(timer)
   }, [fetchTours])
 
   const scheduleTour = useCallback(async (data: { prospectId: string; unitId: string; scheduledTime: string }) => {

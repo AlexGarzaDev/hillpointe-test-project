@@ -25,7 +25,12 @@ export function useProspects() {
     }
   }, [])
 
-  useEffect(() => { void fetchProspects() }, [fetchProspects])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchProspects()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchProspects])
 
   const addProspect = useCallback(async (data: {
     name: string

@@ -16,7 +16,12 @@ export function useActivityFeed() {
     }
   }, [])
 
-  useEffect(() => { void fetchEvents() }, [fetchEvents])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchEvents()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchEvents])
 
   const eventsFor = useCallback(
     // Lightweight selector that keeps components unaware of global event shape.

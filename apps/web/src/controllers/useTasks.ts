@@ -16,7 +16,12 @@ export function useTasks() {
     }
   }, [])
 
-  useEffect(() => { void fetchTasks() }, [fetchTasks])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchTasks()
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchTasks])
 
   const setTaskState = useCallback(async (id: string, state: TaskState) => {
     // Persist a single task update and merge returned canonical task object.
