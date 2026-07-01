@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { versionRouter } from "./endpoints";
+import { versionRouter, unitsRouter, prospectsRouter, toursRouter, tasksRouter, activityRouter } from "./endpoints";
 import { sendError } from "./utils/http-response";
 import { logger } from "./utils/logger";
 import { attachRequestContext } from "./middleware/request-context";
@@ -17,6 +17,11 @@ app.use(express.json());
 app.use(attachRequestContext);
 
 app.use("/version", versionRouter);
+app.use("/units", unitsRouter);
+app.use("/prospects", prospectsRouter);
+app.use("/tours", toursRouter);
+app.use("/tasks", tasksRouter);
+app.use("/activity", activityRouter);
 
 const frontendDistPath = path.resolve(__dirname, "../../web/dist");
 const frontendEntryPath = path.join(frontendDistPath, "index.html");
@@ -27,7 +32,8 @@ if (shouldServeFrontend) {
   app.use(express.static(frontendDistPath));
 
   app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/version")) {
+    const apiPaths = ["/version", "/units", "/prospects", "/tours", "/tasks", "/activity"];
+    if (apiPaths.some((p) => req.path.startsWith(p))) {
       next();
       return;
     }

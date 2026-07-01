@@ -4,10 +4,10 @@ import { sendResponse } from "../../utils/http-response";
 import { logger } from "../../utils/logger";
 import { getOrCreateTraceId } from "../../utils/trace-id";
 
-export const versionRouter = Router();
+export const pluralVersionRouter = Router();
 
 // GET /version - Get project version
-versionRouter.get("/", (req: Request, res: Response) => {
+pluralVersionRouter.get("/", (req: Request, res: Response) => {
   const traceId = getOrCreateTraceId(req);
 
   logger.info("Serving version endpoint", {

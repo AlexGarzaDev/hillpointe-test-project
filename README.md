@@ -1,13 +1,16 @@
 # Hillpointe
 
-A small Express API written in TypeScript with a version endpoint.
+A small Express API written in TypeScript with a version endpoint and PostgreSQL database integration.
 
 ## Requirements
 
 - Node.js 20+
 - npm
+- Docker & Docker Compose (optional, for containerized deployment)
 
 ## Quick Start
+
+### Local Development (In-Memory Store)
 
 ```bash
 npm install
@@ -20,7 +23,34 @@ This runs backend and frontend together.
 - Backend: `http://localhost:3000`
 - Frontend: `http://localhost:5173`
 
-Set `PORT` in `.env` if you want a different backend port.
+### Docker Deployment (with PostgreSQL)
+
+```bash
+docker-compose up --build
+```
+
+This runs the full stack with persistent PostgreSQL database.
+
+- Frontend: `http://localhost`
+- API: `http://localhost:3000`
+- PostgreSQL: `localhost:5432`
+
+For more Docker setup details, see [DOCKER.md](DOCKER.md).
+
+### Development with Docker Database Only
+
+```bash
+# Start only PostgreSQL
+docker-compose -f docker-compose.dev.yml up -d
+
+# Set database URL
+export DATABASE_URL=postgresql://hillpointe_user:hillpointe_password@localhost:5432/hillpointe_db
+
+# Run dev server
+npm run dev
+```
+
+See [db/README.md](db/README.md) for database documentation.
 
 ## Frontend (React + Vite + Tailwind)
 
@@ -45,6 +75,17 @@ The Vite dev server runs at `http://localhost:5173` and proxies `/version` to th
 - `npm run lint` - Run ESLint
 - `npm run lint:fix` - Run ESLint with automatic fixes
 - `npm run format` - Format with Prettier
+
+## Database
+
+The project includes PostgreSQL integration via Docker Compose. The database schema is automatically initialized with tables for:
+- Units (property units)
+- Prospects (customer records)
+- Tours (scheduled tours)
+- Tasks (prospect tasks)
+- Activity Events (event log)
+
+To migrate the API from in-memory store to PostgreSQL, see [db/MIGRATION.md](db/MIGRATION.md).
 
 ## API
 

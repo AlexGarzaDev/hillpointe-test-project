@@ -3,11 +3,16 @@
   "version": "1.0.0",
   "description": "Hillpointe Project",
   "main": "apps/api/dist/server.js",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm --prefix apps/api exec concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
     "backend:dev": "npm --prefix apps/api run dev",
     "frontend:dev": "npm --prefix apps/web run dev",
-    "build": "npm run backend:build && npm run frontend:build",
+    "build": "npm run build:shared && npm run backend:build && npm run frontend:build",
+    "build:shared": "npm --prefix packages/shared run build",
     "backend:build": "npm --prefix apps/api run build",
     "frontend:build": "npm --prefix apps/web run build",
     "prod": "npm run build && npm run start",

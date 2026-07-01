@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express, { Application } from 'express';
-import { versionRouter } from '../endpoints/status/singular';
+import { versionRouter } from '../endpoints/status/index';
 import packageJson from '../../../../package.json';
 
 describe('GET /version', () => {
