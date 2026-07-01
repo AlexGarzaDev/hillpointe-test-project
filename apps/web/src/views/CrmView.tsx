@@ -12,6 +12,7 @@ import { TaskList } from './TaskList'
 import { ActivityFeed } from './ActivityFeed'
 import { TourList } from './TourList'
 import type { TaskState } from '../models/task'
+import type { TourOutcome } from '../models/tour'
 
 const STATUS_COLORS: Record<string, string> = {
   available: 'bg-green-50 border-green-200 text-green-700',
@@ -133,7 +134,7 @@ export function CrmView() {
   }, [selected, tourUnitId, tourTime, scheduleTour])
 
   const handleRecordOutcome = useCallback(
-    async (tourId: string, outcome: any) => {
+    async (tourId: string, outcome: TourOutcome) => {
       await recordOutcome(tourId, outcome)
       // Outcome changes may trigger pipeline-driven task/activity updates.
       await Promise.all([refetchTasks(), refetchActivity(), refetchTours()])
