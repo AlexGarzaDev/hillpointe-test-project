@@ -1,4 +1,5 @@
-# Railway auto-detects this root Dockerfile and builds the API image.
+# Railway auto-detects this root Dockerfile and builds a single container
+# that serves both the API and the built web frontend.
 
 # Build stage
 FROM node:20-alpine AS builder
@@ -10,6 +11,7 @@ COPY package.json package-lock.json ./
 
 # Copy workspace manifests required for npm workspaces
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 
 # Install dependencies
@@ -17,10 +19,11 @@ RUN npm ci
 
 # Copy source code
 COPY apps/api ./apps/api
+COPY apps/web ./apps/web
 COPY packages/shared ./packages/shared
 
-# Build shared workspace first, then API
-RUN npm run build:shared && npm run backend:build
+# Build shared workspace, API, and web frontend
+RUN npm run build
 
 # Runtime stage
 FROM node:20-alpine
@@ -32,6 +35,7 @@ COPY package.json package-lock.json ./
 
 # Copy runtime workspace manifests
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 
 # Install production dependencies only
@@ -39,6 +43,7 @@ RUN npm ci --omit=dev
 
 # Copy built artifacts from builder stage
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/web/dist ./apps/web/dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # Expose API port (Railway will map this internally)
