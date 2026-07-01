@@ -40,7 +40,7 @@ singularProspectsRouter.post("/:id/transition", async (req: Request, res: Respon
 
   // Apply side effects in deterministic order so response reflects final state.
   const createdTasks = await Promise.all(
-    result.tasksToCreate.map((t) => store.createTask(t))
+    result.tasksToCreate.map((t: Omit<Task, "id">) => store.createTask(t))
   );
   await store.closeOpenTasksForProspect(prospect.id);
 

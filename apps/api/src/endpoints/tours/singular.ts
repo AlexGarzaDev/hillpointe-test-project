@@ -42,7 +42,7 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
 
       // Mirror the same side-effect order used in /prospects/:id/transition.
       await Promise.all(
-        result.tasksToCreate.map((t) => store.createTask(t))
+        result.tasksToCreate.map((t: Omit<Task, "id">) => store.createTask(t))
       );
       if (result.taskIdsToClose.length > 0) {
         await store.closeOpenTasksForProspect(prospect.id);
