@@ -37,6 +37,7 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
       const openTasks = await store.listTasks(prospect.id);
       const filteredTasks = openTasks.filter((t: Task) => t.state === "open");
       const nextTour = await store.nextTourForProspect(prospect.id);
+      const targetUnitId = prospect.assignedUnitId ?? tour.unitId;
 
       const result = applyPipelineTransition(prospect, nextStatus, filteredTasks, nextTour);
 
@@ -48,8 +49,8 @@ singularToursRouter.patch("/:id", async (req: Request, res: Response) => {
         await store.closeOpenTasksForProspect(prospect.id);
       }
 
-      if (result.unitStatusUpdate && prospect.assignedUnitId) {
-        await store.updateUnit(prospect.assignedUnitId, { status: result.unitStatusUpdate });
+      if (result.unitStatusUpdate && targetUnitId) {
+        await store.updateUnit(targetUnitId, { status: result.unitStatusUpdate });
       }
 
       await store.appendActivity(result.activityEvent);

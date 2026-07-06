@@ -29,6 +29,10 @@ pluralToursRouter.post("/", async (req: Request, res: Response) => {
   const conflict = await store.checkTourConflict(unitId, scheduledTime);
   if (conflict) return sendError(res, 409, "Unit is already booked for that time");
 
+  // Keep prospect's assigned unit aligned with scheduled tours so downstream
+  // pipeline transitions can reliably apply unit status side effects.
+  await store.updateProspect(prospectId, { assignedUnitId: unitId });
+
   // Outcome starts as null and is later recorded via PATCH /tours/:id.
   const tour = await store.createTour({ prospectId, unitId, scheduledTime });
   return sendResponse(res, 201, { success: true, data: tour });

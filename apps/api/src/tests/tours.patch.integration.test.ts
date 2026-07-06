@@ -282,4 +282,34 @@ describe("PATCH /tours/:id integration", () => {
     expect(mockStore.updateUnit).toHaveBeenCalledWith("unit-1", { status: "available" });
     expect(mockStore.updateProspect).toHaveBeenCalledWith("prospect-1", { status: "lost" });
   });
+
+  it("releases the toured unit on lost outcome when prospect has no assigned unit", async () => {
+    prospects.set("prospect-1", {
+      ...prospects.get("prospect-1")!,
+      assignedUnitId: null,
+    });
+
+    units.set("unit-1", {
+      id: "unit-1",
+      name: "Unit 101",
+      status: "held",
+    });
+
+    const patchResponse = await request(app)
+      .patch("/tours/tour-1")
+      .send({ outcome: "cancelled" });
+
+    expect(patchResponse.status).toBe(200);
+    expect(mockStore.updateUnit).toHaveBeenCalledWith("unit-1", { status: "available" });
+
+    const updatedUnitResponse = await request(app).get("/units/unit-1");
+    expect(updatedUnitResponse.status).toBe(200);
+    expect(updatedUnitResponse.body).toEqual({
+      success: true,
+      data: expect.objectContaining({
+        id: "unit-1",
+        status: "available",
+      }),
+    });
+  });
 });

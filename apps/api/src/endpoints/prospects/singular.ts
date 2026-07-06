@@ -33,6 +33,7 @@ singularProspectsRouter.post("/:id/transition", async (req: Request, res: Respon
   const allTasks = await store.listTasks(prospect.id);
   const openTasks = allTasks.filter((t: Task) => t.state === "open");
   const nextTour = await store.nextTourForProspect(prospect.id);
+  const targetUnitId = prospect.assignedUnitId ?? nextTour?.unitId ?? null;
 
   // Domain logic is pure and centralized in shared contracts; endpoint only
   // gathers current state and applies returned side effects in the store.
@@ -46,9 +47,10 @@ singularProspectsRouter.post("/:id/transition", async (req: Request, res: Respon
     await store.closeOpenTasksForProspect(prospect.id);
   }
 
-  // Unit status changes are optional and only valid when a unit is assigned.
-  if (result.unitStatusUpdate && prospect.assignedUnitId) {
-    await store.updateUnit(prospect.assignedUnitId, { status: result.unitStatusUpdate });
+  // Prefer an explicitly assigned unit, but fall back to the next scheduled
+  // tour's unit so pipeline side effects still apply for unassigned prospects.
+  if (result.unitStatusUpdate && targetUnitId) {
+    await store.updateUnit(targetUnitId, { status: result.unitStatusUpdate });
   }
 
   const activity = await store.appendActivity(result.activityEvent);
