@@ -62,7 +62,7 @@ describe("applyPipelineTransition", () => {
       },
     ]);
     expect(result.taskIdsToClose).toEqual([]);
-    expect(result.unitStatusUpdate).toBeNull();
+    expect(result.unitStatusUpdate).toBe("held");
   });
 
   it("falls back to now for tour-anchored rules when no next tour exists", () => {
@@ -126,6 +126,50 @@ describe("applyPipelineTransition", () => {
       timestamp: "2026-01-15T10:00:00.000Z",
       previousStatus: "application",
       newStatus: "leased",
+    });
+  });
+
+  it("closes open tasks and releases the unit on lost transitions", () => {
+    const openAndClosedTasks: Task[] = [
+      {
+        id: "task-open-1",
+        prospectId: "prospect-1",
+        title: "Confirm paperwork",
+        state: "open",
+        dueDate: null,
+      },
+      {
+        id: "task-done-1",
+        prospectId: "prospect-1",
+        title: "Old follow-up",
+        state: "done",
+        dueDate: null,
+      },
+    ];
+
+    const scheduledProspect: Prospect = {
+      ...baseProspect,
+      status: "tour_scheduled",
+    };
+
+    const result = applyPipelineTransition(
+      scheduledProspect,
+      "lost",
+      openAndClosedTasks,
+      undefined,
+      now,
+    );
+
+    expect(result.tasksToCreate).toEqual([]);
+    expect(result.taskIdsToClose).toEqual(["task-open-1"]);
+    expect(result.unitStatusUpdate).toBe("available");
+    expect(result.activityEvent).toEqual({
+      prospectId: "prospect-1",
+      type: "status_changed",
+      summary: 'Jane Prospect moved to "lost"',
+      timestamp: "2026-01-15T10:00:00.000Z",
+      previousStatus: "tour_scheduled",
+      newStatus: "lost",
     });
   });
 

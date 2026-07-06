@@ -221,4 +221,64 @@ describe("PATCH /tours/:id integration", () => {
     expect(mockStore.closeOpenTasksForProspect).not.toHaveBeenCalled();
     expect(mockStore.updateUnit).not.toHaveBeenCalled();
   });
+
+  it("moves linked prospect to lost, closes open tasks, and releases the unit when outcome is cancelled", async () => {
+    units.set("unit-1", {
+      id: "unit-1",
+      name: "Unit 101",
+      status: "held",
+    });
+
+    const patchResponse = await request(app)
+      .patch("/tours/tour-1")
+      .send({ outcome: "cancelled" });
+
+    expect(patchResponse.status).toBe(200);
+    expect(patchResponse.body).toEqual({
+      success: true,
+      data: {
+        id: "tour-1",
+        prospectId: "prospect-1",
+        unitId: "unit-1",
+        scheduledTime: "2026-07-02T14:00:00.000Z",
+        outcome: "cancelled",
+      },
+    });
+
+    const updatedProspectResponse = await request(app).get("/prospects/prospect-1");
+    expect(updatedProspectResponse.status).toBe(200);
+    expect(updatedProspectResponse.body).toEqual({
+      success: true,
+      data: expect.objectContaining({
+        id: "prospect-1",
+        status: "lost",
+      }),
+    });
+
+    const tasksResponse = await request(app).get("/tasks").query({ prospectId: "prospect-1" });
+    expect(tasksResponse.status).toBe(200);
+    expect(tasksResponse.body).toEqual({
+      success: true,
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          id: "task-existing-open",
+          state: "done",
+        }),
+      ]),
+    });
+
+    const updatedUnitResponse = await request(app).get("/units/unit-1");
+    expect(updatedUnitResponse.status).toBe(200);
+    expect(updatedUnitResponse.body).toEqual({
+      success: true,
+      data: expect.objectContaining({
+        id: "unit-1",
+        status: "available",
+      }),
+    });
+
+    expect(mockStore.closeOpenTasksForProspect).toHaveBeenCalledWith("prospect-1");
+    expect(mockStore.updateUnit).toHaveBeenCalledWith("unit-1", { status: "available" });
+    expect(mockStore.updateProspect).toHaveBeenCalledWith("prospect-1", { status: "lost" });
+  });
 });

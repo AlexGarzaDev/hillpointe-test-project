@@ -111,6 +111,7 @@ export const PIPELINE_RULES: PipelineRule[] = [
   {
     toStatus: 'tour_scheduled',
     effects: [
+      { type: 'update_unit', status: 'held' },
       {
         type: 'create_task',
         titleTemplate: 'Confirm tour 24h prior',
@@ -150,7 +151,10 @@ export const PIPELINE_RULES: PipelineRule[] = [
   },
   {
     toStatus: 'lost',
-    effects: [{ type: 'close_tasks' }],
+    effects: [
+      { type: 'close_tasks' },
+      { type: 'update_unit', status: 'available' },
+    ],
   },
 ]
 
