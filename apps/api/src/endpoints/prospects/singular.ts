@@ -42,7 +42,9 @@ singularProspectsRouter.post("/:id/transition", async (req: Request, res: Respon
   const createdTasks = await Promise.all(
     result.tasksToCreate.map((t: Omit<Task, "id">) => store.createTask(t))
   );
-  await store.closeOpenTasksForProspect(prospect.id);
+  if (result.taskIdsToClose.length > 0) {
+    await store.closeOpenTasksForProspect(prospect.id);
+  }
 
   // Unit status changes are optional and only valid when a unit is assigned.
   if (result.unitStatusUpdate && prospect.assignedUnitId) {
