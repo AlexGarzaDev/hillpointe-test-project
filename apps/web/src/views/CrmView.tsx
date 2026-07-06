@@ -152,7 +152,8 @@ export function CrmView() {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = !filterStatus || p.status === filterStatus
-    const matchesUnit = !filterUnitId || p.assignedUnitId === filterUnitId
+    const hasTourForUnit = tours.some((tour) => tour.prospectId === p.id && tour.unitId === filterUnitId)
+    const matchesUnit = !filterUnitId || p.assignedUnitId === filterUnitId || hasTourForUnit
     return matchesSearch && matchesStatus && matchesUnit
   })
 
