@@ -11,6 +11,7 @@ let taskCounter = 1;
 let activityCounter = 1;
 
 const mockStore = {
+  getUnit: jest.fn(async (id: string) => units.get(id)),
   getTour: jest.fn(async (id: string) => tours.get(id)),
   updateTour: jest.fn(async (id: string, patch: Partial<Omit<Tour, "id">>) => {
     const existing = tours.get(id);
